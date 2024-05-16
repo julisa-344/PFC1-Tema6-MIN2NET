@@ -1,8 +1,5 @@
-import min2net
+from min2net.utils import load_raw
 
-'''
-download raw data
-'''
-min2net.utils.load_raw('SMR_BCI')
-min2net.utils.load_raw('BCIC2a')
-min2net.utils.load_raw('OpenBMI')
+# Download the data
+# load_raw('SMR_BCI')
+load_raw('BCIC2a')

@@ -80,7 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('--loss_weights', nargs='+', default=[0.5, 0.5, 1.0], type=float, help='loss_weights (beta): ex. [beta1,beta2,beta3]')
     parser.add_argument('--save_path', type=str, default='logs/MIN2Net', help='path to save logs')
     parser.add_argument('--data_path', type=str, default='datasets', help='path to datasets')
-    parser.add_argument('--dataset', type=str, default='OpenBMI', help='dataset name: ex. [BCIC2a/SMR_BCI/OpenBMI]')
+    parser.add_argument('--dataset', type=str, default='BCIC2a', help='dataset name: ex. [BCIC2a/SMR_BCI/OpenBMI]')
     parser.add_argument('--subject', nargs='+', default=None, type=int, help='list of test subject id, None=all subject')
     parser.add_argument('--train_type', type=str, default=None, help='Train type: ex. subject_dependent, subject_independent')
     parser.add_argument('--GPU', type=str, default='0', help='GPU ID')

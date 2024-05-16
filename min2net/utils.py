@@ -17,27 +17,7 @@ PATH = os.path.dirname(os.path.realpath(__file__))
 def load_raw(dataset):
     # folder_name = str(PATH)+'/datasets'
     folder_name = 'datasets'
-    if dataset == 'OpenBMI':
-        try:
-            num_subjects = 54
-            sessions = [1, 2]
-            save_path = folder_name + '/' + dataset + '/raw'
-            if save_path is not None:
-                if not os.path.exists(save_path):
-                    os.makedirs(save_path)
-            for session in sessions:
-                for person in range(1, num_subjects+1):
-                    file_name = '/sess{:02d}_subj{:02d}_EEG_MI.mat'.format(session,person)
-                    if os.path.exists(save_path+file_name):
-                        os.remove(save_path+file_name) # if exist, remove file
-                    print('\n===Download is being processed on session: {} subject: {}==='.format(session, person))
-                    url = 'ftp://parrot.genomics.cn/gigadb/pub/10.5524/100001_101000/100542/session{}/s{}{}'.format(session, person, file_name)
-                    print('save to: '+save_path+file_name)
-                    wget.download(url,  save_path+file_name)
-            print('\nDone!')
-        except:
-            raise Exception('Path Error: file does not exist, please direccly download at http://gigadb.org/dataset/100542')
-    elif dataset == 'BCIC2a':
+    if dataset == 'BCIC2a':
         try:
             num_subjects = 9
             sessions = ['T', 'E']
