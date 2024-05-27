@@ -1,3 +1,9 @@
+import sys
+
+sys.path.append("/home/loaspra/Code/PFC1/PFC1-Tema6-MIN2NET")
+
+
+
 import tensorflow as tf
 import numpy as np
 import os
@@ -82,7 +88,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_path', type=str, default='datasets', help='path to datasets')
     parser.add_argument('--dataset', type=str, default='BCIC2a', help='dataset name: ex. [BCIC2a/SMR_BCI/OpenBMI]')
     parser.add_argument('--subject', nargs='+', default=None, type=int, help='list of test subject id, None=all subject')
-    parser.add_argument('--train_type', type=str, default=None, help='Train type: ex. subject_dependent, subject_independent')
+    parser.add_argument('--train_type', type=str, default="subject_dependent", help='Train type: ex. subject_dependent, subject_independent')
     parser.add_argument('--GPU', type=str, default='0', help='GPU ID')
     parser.add_argument('--margin', type=float, default=1.0, help='margin (alpha)')
     parser.add_argument('--num_class', type=int, default=2, help='number of classes')
@@ -119,6 +125,7 @@ if __name__ == '__main__':
 
     if args.subject == None: #loop to train all subjects
         for subject in range(1, n_subjects+1):
+            print("Subject: ", subject, " of ", n_subjects)
             k_fold_cross_validation(subject)
     else:
         #train a sigle subject

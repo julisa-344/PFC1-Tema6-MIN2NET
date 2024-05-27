@@ -1,3 +1,8 @@
+import sys
+
+sys.path.append("/home/loaspra/Code/PFC1/PFC1-Tema6-MIN2NET")
+
+
 import min2net.preprocessing as prep
 from min2net.preprocessing.config import CONSTANT
 

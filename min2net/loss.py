@@ -1,5 +1,5 @@
 import tensorflow as tf
-import tensorflow_addons as tfa
+# import tensorflow_addons as tfa
 import tensorflow.keras.backend as K
 
 
@@ -18,7 +18,8 @@ def triplet_loss(margin = 1.0):
     def inner_triplet_loss_objective(y_true, y_pred):
         labels = y_true
         embeddings = y_pred
-        return tfa.losses.triplet_semihard_loss(y_true=labels, y_pred=embeddings,margin=margin)
+        # return tf.losses.triplet_semihard_loss(y_true=labels, y_pred=embeddings,margin=margin)
+        return tf.contrib.losses.metric_learning.triplet_semihard_loss(y_true=labels, y_pred=embeddings,margin=margin)
     return inner_triplet_loss_objective
 
 def SparseCategoricalCrossentropy(class_weight = None):

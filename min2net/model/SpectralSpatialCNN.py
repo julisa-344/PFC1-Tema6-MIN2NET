@@ -43,7 +43,7 @@ class SpectralSpatialCNN:
         self.verbose = verbose
         self.log_path = log_path
         self.model_name = model_name
-        self.weights_dir = log_path+'/'+model_name+'_out_weights.h5'
+        self.weights_dir = log_path+'/'+model_name+'_out_.weights.h5'
         self.csv_dir = log_path+'/'+model_name+'_out_log.log'
         self.time_log = log_path+'/'+model_name+'_time_log.csv'
 
@@ -54,11 +54,11 @@ class SpectralSpatialCNN:
         self.f1_average = 'binary' if self.num_class == 2 else 'macro'
         self.data_format = 'channels_last'
         self.shuffle = False
-        self.metrics = 'accuracy'
+        self.metrics = ['accuracy']
         self.monitor = 'val_loss'
         self.mode = 'min'
         self.save_best_only = True
-        self.save_weight_only = True
+        self.save_weights_only = True
         self.seed = 1234
         self.class_balancing = False
         self.class_weight = None
@@ -104,7 +104,7 @@ class SpectralSpatialCNN:
         csv_logger = CSVLogger(self.csv_dir)
         time_callback = TimeHistory(self.time_log)
         checkpointer = ModelCheckpoint(monitor=self.monitor, filepath=self.weights_dir, verbose=self.verbose, 
-                                       save_best_only=self.save_best_only, save_weight_only=self.save_weight_only)
+                                       save_best_only=self.save_best_only, save_weights_only=self.save_weights_only)
         reduce_lr = ReduceLROnPlateau(monitor=self.monitor, patience=self.patience, factor=self.factor, mode=self.mode, 
                                       verbose=self.verbose, min_lr=self.min_lr)
         es = EarlyStopping(monitor=self.monitor, mode=self.mode, verbose=self.verbose, patience=self.es_patience)
