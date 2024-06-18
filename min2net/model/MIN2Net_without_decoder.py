@@ -59,7 +59,7 @@ class MIN2Net_without_decoder:
         self.f1_average = 'binary' if self.num_class == 2 else 'macro'
         self.data_format = 'channels_last'
         self.shuffle = False
-        self.metrics = ['accuracy']
+        self.metrics = 'accuracy'
         self.monitor = 'val_loss'
         self.mode = 'min'
         self.save_best_only = True

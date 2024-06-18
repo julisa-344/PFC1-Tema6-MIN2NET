@@ -2,6 +2,7 @@ import numpy as np
 import csv
 from scipy import signal
 from scipy.signal import butter, filtfilt
+from sklearn.model_selection import KFold, train_test_split
 import wget
 import os
 import time
@@ -14,72 +15,72 @@ import argparse
 # lib path
 PATH = os.path.dirname(os.path.realpath(__file__))
 
-def load_raw(dataset):
-    # folder_name = str(PATH)+'/datasets'
-    folder_name = 'datasets'
-    if dataset == 'BCIC2a':
-        try:
-            num_subjects = 9
-            sessions = ['T', 'E']
-            save_path = folder_name + '/' + dataset + '/raw'
-            if save_path is not None:
-                if not os.path.exists(save_path):
-                    os.makedirs(save_path)
+# def load_raw(dataset):
+#     # folder_name = str(PATH)+'/datasets'
+#     folder_name = 'datasets'
+#     if dataset == 'BCIC2a':
+#         try:
+#             num_subjects = 9
+#             sessions = ['T', 'E']
+#             save_path = folder_name + '/' + dataset + '/raw'
+#             if save_path is not None:
+#                 if not os.path.exists(save_path):
+#                     os.makedirs(save_path)
 
-            for session in sessions:
-                for person in range(1, num_subjects+1):
-                    file_name = '/A{:02d}{}.mat'.format(person, session)
-                    if os.path.exists(save_path+file_name):
-                        os.remove(save_path+file_name) # if exist, remove file
-                    print('\n===Download is being processed on session: {} subject: {}==='.format(session, person))
-                    url = 'https://lampx.tugraz.at/~bci/database/001-2014'+file_name
-                    print('save to: '+save_path+file_name)
-                    wget.download(url, save_path+file_name)
-            print('\nDone!')
-        except:
-            raise Exception('Path Error: file does not exist, please direccly download at http://bnci-horizon-2020.eu/database/data-sets')
-    elif dataset == 'SMR_BCI':
-        try:
-            num_subjects = 14
-            sessions = ['T', 'E']
-            save_path = folder_name + '/' + dataset + '/raw'
-            if save_path is not None:
-                if not os.path.exists(save_path):
-                    os.makedirs(save_path)
-            for session in sessions:
-                for person in range(1, num_subjects+1):
-                    file_name = '/S{:02d}{}.mat'.format(person, session)
-                    if os.path.exists(save_path+file_name):
-                        os.remove(save_path+file_name) # if exist, remove file
-                    print('\n===Download is being processed on session: {} subject: {}==='.format(session, person))
-                    url = 'https://lampx.tugraz.at/~bci/database/002-2014'+file_name
-                    print('save to: '+save_path+file_name)
-                    wget.download(url,  save_path+file_name)
-            print('\nDone!')
-        except:
-            raise Exception('Path Error: file does not exist, please direccly download at http://bnci-horizon-2020.eu/database/data-sets')
+#             for session in sessions:
+#                 for person in range(1, num_subjects+1):
+#                     file_name = '/A{:02d}{}.mat'.format(person, session)
+#                     if os.path.exists(save_path+file_name):
+#                         os.remove(save_path+file_name) # if exist, remove file
+#                     print('\n===Download is being processed on session: {} subject: {}==='.format(session, person))
+#                     url = 'https://lampx.tugraz.at/~bci/database/001-2014'+file_name
+#                     print('save to: '+save_path+file_name)
+#                     wget.download(url, save_path+file_name)
+#             print('\nDone!')
+#         except:
+#             raise Exception('Path Error: file does not exist, please direccly download at http://bnci-horizon-2020.eu/database/data-sets')
+#     elif dataset == 'SMR_BCI':
+#         try:
+#             num_subjects = 14
+#             sessions = ['T', 'E']
+#             save_path = folder_name + '/' + dataset + '/raw'
+#             if save_path is not None:
+#                 if not os.path.exists(save_path):
+#                     os.makedirs(save_path)
+#             for session in sessions:
+#                 for person in range(1, num_subjects+1):
+#                     file_name = '/S{:02d}{}.mat'.format(person, session)
+#                     if os.path.exists(save_path+file_name):
+#                         os.remove(save_path+file_name) # if exist, remove file
+#                     print('\n===Download is being processed on session: {} subject: {}==='.format(session, person))
+#                     url = 'https://lampx.tugraz.at/~bci/database/002-2014'+file_name
+#                     print('save to: '+save_path+file_name)
+#                     wget.download(url,  save_path+file_name)
+#             print('\nDone!')
+#         except:
+#             raise Exception('Path Error: file does not exist, please direccly download at http://bnci-horizon-2020.eu/database/data-sets')
 
 class DataLoader:
-    def __init__(self, dataset, train_type=None, data_type=None, num_class=2, subject=None, data_format=None, dataset_path='/datasets', **kwargs):
-
-        self.dataset = dataset #Dataset name: 'OpenBMI', 'SMR_BCI', 'BCIC2a'
-        self.train_type = train_type # 'subject_dependent', 'subject_independent'
-        self.data_type = data_type # 'fbcsp', 'spectral_spatial', 'time_domain'
-        self.dataset_path = dataset_path
+    def __init__(self, data_path, num_class=2, subject=None, data_format='NCTD', **kwargs):
+        self.data_path = data_path
         self.subject = subject # id, start at 1
         self.data_format = data_format # 'channels_first', 'channels_last'
         self.fold = None # fold, start at 1
-        self.prefix_name = 'S'
+        self.prefix_name = 'A'
         self.num_class = num_class
         for k in kwargs.keys():
             self.__setattr__(k, kwargs[k])
 
 
-        self.path = self.dataset_path+'/'+self.dataset+'/'+self.data_type+'/'+str(self.num_class)+'_class/'+self.train_type
+        self.path = self.data_path + "partitioned"
+
+        os.makedirs(self.path, exist_ok=True)
+        num_folds = kwargs.get('num_folds', 5)
+        self.prepare_dataset(num_folds=num_folds, ratio=0.6)
     
     def _change_data_format(self, X):
         if self.data_format == 'NCTD':
-            # (#n_trial, #channels, #time, #depth)
+            # (#n_trial, #channels, #time, #depth) ***
             X = X.reshape(X.shape[0], X.shape[1], X.shape[2], 1)
         elif self.data_format == 'NDCT':
             # (#n_trial, #depth, #channels, #time)
@@ -107,8 +108,8 @@ class DataLoader:
         # load 
         X, y =  np.array([]),  np.array([])
         try:
-            self.file_x = self.path+'/X_train_{}{:03d}_fold{:03d}.npy'.format(self.prefix_name, self.subject, self.fold)
-            self.file_y = self.path+'/y_train_{}{:03d}_fold{:03d}.npy'.format(self.prefix_name, self.subject, self.fold)
+            self.file_x = self.path+'X_train_{}{:03d}_fold{:03d}.npy'.format(self.prefix_name, self.subject, self.fold)
+            self.file_y = self.path+'y_train_{}{:03d}_fold{:03d}.npy'.format(self.prefix_name, self.subject, self.fold)
             X = self._change_data_format(np.load(self.file_x))
             y = np.load(self.file_y)
         except:
@@ -123,8 +124,8 @@ class DataLoader:
         # load 
         X, y =  np.array([]),  np.array([])
         try:
-            self.file_x = self.path+'/X_val_{}{:03d}_fold{:03d}.npy'.format(self.prefix_name, self.subject, self.fold)
-            self.file_y = self.path+'/y_val_{}{:03d}_fold{:03d}.npy'.format(self.prefix_name, self.subject, self.fold)
+            self.file_x = self.path+'X_val_{}{:03d}_fold{:03d}.npy'.format(self.prefix_name, self.subject, self.fold)
+            self.file_y = self.path+'y_val_{}{:03d}_fold{:03d}.npy'.format(self.prefix_name, self.subject, self.fold)
             X = self._change_data_format(np.load(self.file_x))
             y = np.load(self.file_y)
         except:
@@ -139,13 +140,40 @@ class DataLoader:
         # load 
         X, y =  np.array([]),  np.array([])
         try:
-            self.file_x = self.path+'/X_test_{}{:03d}_fold{:03d}.npy'.format(self.prefix_name, self.subject, self.fold)
-            self.file_y = self.path+'/y_test_{}{:03d}_fold{:03d}.npy'.format(self.prefix_name, self.subject, self.fold)
+            self.file_x = self.path+'X_test_{}{:03d}_fold{:03d}.npy'.format(self.prefix_name, self.subject, self.fold)
+            self.file_y = self.path+'y_test_{}{:03d}_fold{:03d}.npy'.format(self.prefix_name, self.subject, self.fold)
             X = self._change_data_format(np.load(self.file_x))
             y = np.load(self.file_y)
         except:
             raise Exception('Path Error: file does not exist, please check this path {}, and {}'.format(self.file_x, self.file_y))
         return X, y
+
+    def prepare_dataset(self, num_folds, ratio=0.6):
+        # Load data
+        class1_data = np.load(self.path+"/class_1/{}{:02d}_data.npy".format(self.prefix_name, self.subject))
+        class2_data = np.load(self.path+"/class_2/{}{:02d}_data.npy".format(self.prefix_name, self.subject))
+        data = np.concatenate((class1_data, class2_data), axis=0)
+        labels = np.concatenate((np.zeros(class1_data.shape[0]), np.ones(class2_data.shape[0])), axis=0)
+
+        # Split data into train and test
+        X_train_test, X_test, y_train_test, y_test = train_test_split(data, labels, test_size=ratio)
+
+        # Split train_test into train and validation
+        X_train, X_val, y_train, y_val = train_test_split(X_train_test, y_train_test, test_size=ratio)
+
+        # Initialize KFold
+        kf = KFold(n_splits=num_folds)
+        self.path = self.data_path + "processed/"
+
+        # For each fold, save train, validation, and test sets
+        for fold, (train_index, val_index) in enumerate(kf.split(X_train)):
+            np.save(self.path + f'X_train_{self.prefix_name}{self.subject:03d}_fold{fold:03d}.npy', X_train[train_index])
+            np.save(self.path + f'X_val_{self.prefix_name}{self.subject:03d}_fold{fold:03d}.npy', X_train[val_index])
+            np.save(self.path + f'X_test_{self.prefix_name}{self.subject:03d}_fold{fold:03d}.npy', X_test)
+            np.save(self.path + f'y_train_{self.prefix_name}{self.subject:03d}_fold{fold:03d}.npy', y_train[train_index])
+            np.save(self.path + f'y_val_{self.prefix_name}{self.subject:03d}_fold{fold:03d}.npy', y_train[val_index])
+            np.save(self.path + f'y_test_{self.prefix_name}{self.subject:03d}_fold{fold:03d}.npy', y_test)
+
 
 def compute_class_weight(y_train):
     """compute class balancing
@@ -207,7 +235,6 @@ def zero_padding(data, pad_size=4):
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
             data_pad[i,j,:,:] = np.pad(data[i,j,:,:], [pad_size, pad_size], mode='constant')
-    print(data_pad.shape)
     return data_pad 
 
 
@@ -238,6 +265,5 @@ def psd_welch(data, smp_freq):
         for j in range(n_chs):
             freq, power_den = signal.welch(data[i,j], smp_freq, nperseg=n_points)
             index = np.where((freq>=8) & (freq<=30))[0].tolist()
-            # print("the length of---", len(index))
             data_psd[i,j] = power_den[index]
     return data_psd

@@ -7,3 +7,6 @@ min2net.egg-info/
 .ipynb
 .DS_Store
 __pycache__
+data/
+datasets/
+logs/

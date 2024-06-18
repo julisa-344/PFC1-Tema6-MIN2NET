@@ -86,7 +86,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     os.environ['CUDA_VISIBLE_DEVICES'] = args.GPU
-    print(tf.config.experimental.list_physical_devices('GPU'))
+    print("AVailable GPUs: ", tf.config.experimental.list_physical_devices('GPU'))
 
     # load config params from config.py
     CONSTANT = config['DeepConvNet']

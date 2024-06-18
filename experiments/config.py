@@ -39,6 +39,12 @@ config = {
                     'input_shape': (1,400,15),
                     'data_format': 'NTCD',
                     'num_class': 2
+            },
+            'CUSTOM': {
+                    'n_subjects': 8,
+                    'input_shape': (8,1280,1),
+                    'data_format': 'NCTD',
+                    'num_class': 2
             }
     },
 
@@ -82,7 +88,7 @@ config = {
                     'input_shape': (1,400,15),
                     'data_format': 'NTCD',
                     'num_class': 2
-            }
+            },
     },
     'MIN2Net_without_decoder': {
             'subject_dependent': {
