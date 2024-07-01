@@ -168,6 +168,7 @@ class DataLoader:
 
         # For each fold, save train, validation, and test sets
         for fold, (train_index, val_index) in enumerate(kf.split(X_train)):
+            print(f"saving fold {fold}")
             np.save(self.path + f'X_train_{self.prefix_name}{self.subject:03d}_fold{fold:03d}.npy', X_train[train_index])
             np.save(self.path + f'X_val_{self.prefix_name}{self.subject:03d}_fold{fold:03d}.npy', X_train[val_index])
             np.save(self.path + f'X_test_{self.prefix_name}{self.subject:03d}_fold{fold:03d}.npy', X_test)
