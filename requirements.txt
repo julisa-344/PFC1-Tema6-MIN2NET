@@ -1,0 +1,6 @@
+tensorflow
+# This two are deprecated AFAIK
+# tensorflow-gpu
+# tensorflow-addons
+scikit-learn
+wget
