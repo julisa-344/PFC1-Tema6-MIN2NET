@@ -18,7 +18,7 @@ from tensorflow.keras.layers import Cropping2D
 
 class MIN2Net:
     def __init__(self,
-                input_shape=(8, 1280), 
+                input_shape=(8, 700), 
                 num_class=2, 
                 loss=[mean_squared_error, triplet_loss(margin=1.0), 'sparse_categorical_crossentropy'],
                 loss_weights=[1., 1., 1.], 

@@ -150,12 +150,13 @@ class DataLoader:
 
     def prepare_dataset(self, num_folds, ratio=0.6):
         # Load data
-        class1_data = np.load(self.path+"/class_1/{}{:02d}_data.npy".format(self.prefix_name, self.subject))
-        class2_data = np.load(self.path+"/class_2/{}{:02d}_data.npy".format(self.prefix_name, self.subject))
+        class1_data = np.load(self.path+"/class_1/{}{:02d}.npy".format(self.prefix_name, self.subject))
+        class2_data = np.load(self.path+"/class_2/{}{:02d}.npy".format(self.prefix_name, self.subject))
         data = np.concatenate((class1_data, class2_data), axis=0)
         labels = np.concatenate((np.zeros(class1_data.shape[0]), np.ones(class2_data.shape[0])), axis=0)
 
-        # Split data into train and test
+        # Split data into train and test 60 porciento de la data total va para el train
+        # Donde ratio = 0.6 (60% de la data va para el rain)
         X_train_test, X_test, y_train_test, y_test = train_test_split(data, labels, test_size=ratio)
 
         # Split train_test into train and validation

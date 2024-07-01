@@ -2,8 +2,6 @@ import sys
 
 sys.path.append("/home/loaspra/Code/PFC1/PFC1-Tema6-MIN2NET")
 
-
-
 import tensorflow as tf
 import numpy as np
 import os
@@ -87,7 +85,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--loss_weights', nargs='+', default=[0.5, 0.5, 1.0], type=float, help='loss_weights (beta): ex. [beta1,beta2,beta3]')
     parser.add_argument('--save_path', type=str, default='logs/MIN2Net', help='path to save logs')
-    parser.add_argument('--data_path', type=str, default='datasets', help='path to datasets')
+    parser.add_argument('--data_path', type=str, default='data/', help='path to datasets')
     parser.add_argument('--dataset', type=str, default='CUSTOM', help='dataset name: ex. [BCIC2a/SMR_BCI/OpenBMI]')
     parser.add_argument('--subject', nargs='+', default=None, type=int, help='list of test subject id, None=all subject')
     parser.add_argument('--train_type', type=str, default="subject_independent", help='Train type: ex. subject_dependent, subject_independent')
