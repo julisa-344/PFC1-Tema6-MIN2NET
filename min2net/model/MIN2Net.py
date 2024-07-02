@@ -13,7 +13,6 @@ import time
 from sklearn.metrics import classification_report, f1_score
 from min2net.loss import mean_squared_error, triplet_loss, SparseCategoricalCrossentropy
 from min2net.utils import TimeHistory, compute_class_weight
-from tensorflow.keras.layers import Cropping2D
 
 
 class MIN2Net:
@@ -22,7 +21,7 @@ class MIN2Net:
                 num_class=2, 
                 loss=[mean_squared_error, triplet_loss(margin=1.0), 'sparse_categorical_crossentropy'],
                 loss_weights=[1., 1., 1.], 
-                latent_dim = None,        
+                latent_dim = None,
                 epochs=200,
                 batch_size=100,
                 optimizer=Adam(beta_1=0.9, beta_2=0.999, epsilon=1e-08),
@@ -35,7 +34,7 @@ class MIN2Net:
                 log_path='logs',
                 model_name='MIN2Net', 
                 **kwargs):
-        _, T, C = input_shape
+        D, T, C = input_shape
         self.latent_dim = latent_dim if latent_dim is not None else C if num_class==2 else 64
         self.num_class = num_class
         self.input_shape = input_shape
@@ -61,10 +60,10 @@ class MIN2Net:
         self.f1_average = 'binary' if self.num_class == 2 else 'macro'
         self.data_format = 'channels_last'
         self.shuffle = False
-        self.metrics = ('accuracy', 'accuracy', 'accuracy')
+        self.metrics = ['accuracy', 'accuracy', 'accuracy']
         self.monitor = 'val_loss'
         self.mode = 'min'
-        self.save_best_only = False
+        self.save_best_only = True
         self.save_weights_only = True
         self.seed = 1234
         self.class_balancing = False
@@ -72,7 +71,7 @@ class MIN2Net:
         self.subsampling_size = 100
         self.pool_size_1 = (1,T//self.subsampling_size)
         self.pool_size_2 = (1,4)
-        self.filter_1 = C # Fix 2
+        self.filter_1 = C
         self.filter_2 = 10
         
         for k in kwargs.keys():
@@ -87,7 +86,6 @@ class MIN2Net:
             os.makedirs(self.log_path)
 
     def build(self):
-        print("Shaping: ", self.input_shape)
         'encoder'
         encoder_input  = Input(self.input_shape)
         en_conv        = Conv2D(self.filter_1, (1, 64), activation='elu', padding="same", 
@@ -102,7 +100,7 @@ class MIN2Net:
         encoder_output = Dense(self.latent_dim, kernel_constraint=max_norm(0.5))(en_conv)
         encoder        = Model(inputs=encoder_input, outputs=encoder_output, name='encoder')
         encoder.summary()
-    
+        
         'decoder'
         decoder_input  = Input(shape=(self.latent_dim,), name='decoder_input')
         de_conv        = Dense(1*self.flatten_size*self.filter_2, activation='elu', 
@@ -173,21 +171,21 @@ class MIN2Net:
         start = time.time()
         y_pred_decoder, y_pred_trip, y_pred_clf = model.predict(X_test)
         end = time.time()
-        # Existing code
-        # loss, decoder_loss, trip_loss, classifier_loss, decoder_acc, trip_acc, classifier_acc  = model.evaluate(x=X_test, y=[X_test,y_test,y_test], batch_size=self.batch_size, verbose=self.verbose)
-
-        # Updated code
-        eval_results = model.evaluate(x=X_test, y=[X_test,y_test,y_test], batch_size=self.batch_size, verbose=self.verbose)
-        loss, decoder_loss, trip_loss, classifier_loss = eval_results[0], eval_results[1], eval_results[2], eval_results[3]
+        print(model.metrics_names)
+        loss, decoder_loss, trip_loss, classifier_loss, decoder_acc, trip_acc, classifier_acc  = model.evaluate(x=X_test,
+                                                                                                                y=[X_test,y_test,y_test],
+                                                                                                                batch_size=self.batch_size, 
+                                                                                                                verbose=self.verbose)
         y_pred_argm = np.argmax(y_pred_clf, axis=1)
         print("F1-score is computed based on {}".format(self.f1_average))
         f1 = f1_score(y_test, y_pred_argm, average=self.f1_average)
-        print('(loss: {})'.format(loss))
+        print('(loss: {}, accuracy: {})'.format(loss, classifier_acc))
         print(classification_report(y_test, y_pred_argm))
         evaluation = {'loss': loss, 
                       'decoder_loss': decoder_loss, 
                       'triplet_loss':trip_loss, 
                       'classifier_loss': classifier_loss, 
+                      'accuracy': classifier_acc,
                       'f1-score': f1 ,
                       'prediction_time': end-start}
         Y = {'y_true': y_test,
