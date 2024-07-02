@@ -18,11 +18,11 @@ from tensorflow.keras.layers import Cropping2D
 
 class MIN2Net:
     def __init__(self,
-                input_shape=(8, 700), 
+                input_shape=(1, 700, 8),  # 1, N_samples, n_features (channels) FIX 1
                 num_class=2, 
                 loss=[mean_squared_error, triplet_loss(margin=1.0), 'sparse_categorical_crossentropy'],
                 loss_weights=[1., 1., 1.], 
-                latent_dim = None,
+                latent_dim = None,        
                 epochs=200,
                 batch_size=100,
                 optimizer=Adam(beta_1=0.9, beta_2=0.999, epsilon=1e-08),
@@ -35,7 +35,7 @@ class MIN2Net:
                 log_path='logs',
                 model_name='MIN2Net', 
                 **kwargs):
-        C, T, _ = input_shape
+        _, T, C = input_shape
         self.latent_dim = latent_dim if latent_dim is not None else C if num_class==2 else 64
         self.num_class = num_class
         self.input_shape = input_shape
@@ -72,7 +72,7 @@ class MIN2Net:
         self.subsampling_size = 100
         self.pool_size_1 = (1,T//self.subsampling_size)
         self.pool_size_2 = (1,4)
-        self.filter_1 = 8
+        self.filter_1 = C # Fix 2
         self.filter_2 = 10
         
         for k in kwargs.keys():
@@ -87,6 +87,7 @@ class MIN2Net:
             os.makedirs(self.log_path)
 
     def build(self):
+        print("Shaping: ", self.input_shape)
         'encoder'
         encoder_input  = Input(self.input_shape)
         en_conv        = Conv2D(self.filter_1, (1, 64), activation='elu', padding="same", 
@@ -107,15 +108,12 @@ class MIN2Net:
         de_conv        = Dense(1*self.flatten_size*self.filter_2, activation='elu', 
                             kernel_constraint=max_norm(0.5))(decoder_input)
         de_conv        = Reshape((1, self.flatten_size, self.filter_2))(de_conv)
-        de_conv = Conv2DTranspose(filters=self.filter_2, kernel_size=(1, 64), 
-                        activation='elu', padding='same', strides=(1, 4), 
-                        kernel_constraint=max_norm(2., axis=(0, 1, 2)))(de_conv)
-        de_conv = Conv2DTranspose(filters=self.filter_1, kernel_size=(1, 40), 
-                                            activation='elu', padding='same', strides=(1, 13), 
-                                            kernel_constraint=max_norm(2., axis=(0, 1, 2)))(de_conv)
-        # Add cropping layer
-        de_conv = Cropping2D(cropping=((0, 0), (36, 36)))(de_conv)
-        decoder_output = de_conv
+        de_conv        = Conv2DTranspose(filters=self.filter_2, kernel_size=(1, 64), 
+                                         activation='elu', padding='same', strides=self.pool_size_2, 
+                                         kernel_constraint=max_norm(2., axis=(0, 1, 2)))(de_conv)
+        decoder_output = Conv2DTranspose(filters=self.filter_1, kernel_size=(1, 32), 
+                                         activation='elu', padding='same', strides=self.pool_size_1, 
+                                         kernel_constraint=max_norm(2., axis=(0, 1, 2)))(de_conv)
         decoder        = Model(inputs=decoder_input, outputs=decoder_output, name='decoder')
         decoder.summary()
 

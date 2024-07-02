@@ -81,14 +81,15 @@ class DataLoader:
     def _change_data_format(self, X):
         if self.data_format == 'NCTD':
             # (#n_trial, #channels, #time, #depth) ***
-            X = X.reshape(X.shape[0], X.shape[1], X.shape[2], 1)
+            X = X.reshape(X.shape[0], 1, X.shape[1], X.shape[2])
+            print("entegando X con shape: ", X.shape)
         elif self.data_format == 'NDCT':
             # (#n_trial, #depth, #channels, #time)
             X = X.reshape(X.shape[0], 1, X.shape[1], X.shape[2])
         elif self.data_format == 'NTCD':
             # (#n_trial, #time, #channels, #depth)
-            X = X.reshape(X.shape[0], X.shape[1], X.shape[2], 1)
-            X = np.swapaxes(X, 1, 3)
+            X = X.reshape(1, X.shape[0], X.shape[1], X.shape[2])
+            # X = np.swapaxes(X, 1, 3)
         elif self.data_format == 'NSHWD':
             # (#n_trial, #Freqs, #height, #width, #depth)
             X = zero_padding(X)

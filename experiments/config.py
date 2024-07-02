@@ -42,7 +42,7 @@ config = {
             },
             'CUSTOM': {
                     'n_subjects': 8,
-                    'input_shape': (700,8,1),
+                    'input_shape': (1,700,8),
                     'data_format': 'NCTD',
                     'num_class': 2
             }
