@@ -9,6 +9,7 @@ import time
 import tensorflow as tf
 from sklearn.utils import class_weight
 from scipy.interpolate import CubicSpline 
+from sklearn.utils import resample
 from scipy import ndimage
 import argparse
 
@@ -151,8 +152,18 @@ class DataLoader:
 
     def prepare_dataset(self, num_folds, ratio=0.6):
         # Load data
-        class1_data = np.load(self.path+"/class_1/{}{:02d}.npy".format(self.prefix_name, self.subject))
-        class2_data = np.load(self.path+"/class_2/{}{:02d}.npy".format(self.prefix_name, self.subject))
+        class1_data = np.load(self.path+"/class_1/{}{:02d}.npy".format(self.prefix_name, self.subject)).swapaxes(0, 1)
+        class2_data = np.load(self.path+"/class_2/{}{:02d}.npy".format(self.prefix_name, self.subject)).swapaxes(0, 1)
+
+        # Balance the dataset by oversampling the minority class (class2_data in this case)
+        if class1_data.shape[0] > class2_data.shape[0]:
+            class2_data = resample(class2_data, replace=True, n_samples=class1_data.shape[0], random_state=123)
+        elif class1_data.shape[0] < class2_data.shape[0]:
+            class1_data = resample(class1_data, replace=True, n_samples=class2_data.shape[0], random_state=123)
+
+        print(f"Class 1 shape: {class1_data.shape}")
+        print(f"Class 2 shape: {class2_data.shape}")
+
         data = np.concatenate((class1_data, class2_data), axis=0)
         labels = np.concatenate((np.zeros(class1_data.shape[0]), np.ones(class2_data.shape[0])), axis=0)
 

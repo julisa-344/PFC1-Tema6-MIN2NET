@@ -60,6 +60,7 @@ def k_fold_cross_validation(subject):
         X_test, y_test = loader.load_test_set(fold=fold)
 
         # train and test using MIN2Net
+        print(f"Training with shapes: X_train={X_train.shape}, y_train={y_train.shape}, X_val={X_val.shape}, y_val={y_val.shape}")
         model.fit(X_train, y_train, X_val, y_val)
         Y, evaluation = model.predict(X_test, y_test)
 
@@ -113,7 +114,7 @@ if __name__ == '__main__':
     data_format = CONSTANT[args.dataset]['data_format']
     num_class = CONSTANT[args.dataset]['num_class']
     num_class = args.num_class if args.num_class != 2 else num_class
-    latent_dim = input_shape[1] if num_class == 2 else 64 # n_channels or 64
+    latent_dim = 64 # n_channels or 64
 
     print('TRAIN SET: {}'.format(args.dataset))
     print('The size of latent vector: {}'.format(latent_dim))

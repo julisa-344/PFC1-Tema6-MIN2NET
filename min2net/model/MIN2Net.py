@@ -4,6 +4,9 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.metrics import RootMeanSquaredError
+# import the sparse categorical crossentropy loss function
+from tensorflow.keras.losses import SparseCategoricalCrossentropy
 import tensorflow as tf
 from tensorflow.keras import backend as K
 
@@ -11,13 +14,13 @@ import numpy as np
 import os
 import time
 from sklearn.metrics import classification_report, f1_score
-from min2net.loss import mean_squared_error, triplet_loss, SparseCategoricalCrossentropy
+from min2net.loss import mean_squared_error, triplet_loss  #, SparseCategoricalCrossentropy
 from min2net.utils import TimeHistory, compute_class_weight
 
 
 class MIN2Net:
     def __init__(self,
-                input_shape=(1, 700, 8),  # 1, N_samples, n_features (channels) FIX 1
+                input_shape=(1, 256, 8),  # 1, N_samples, n_features (channels) FIX 2
                 num_class=2, 
                 loss=[mean_squared_error, triplet_loss(margin=1.0), 'sparse_categorical_crossentropy'],
                 loss_weights=[1., 1., 1.], 
@@ -141,17 +144,18 @@ class MIN2Net:
                                           min_lr=self.min_lr)
         es            = EarlyStopping(monitor=self.monitor, mode=self.mode, verbose=self.verbose, 
                                       patience=self.es_patience)
-        model = self.build()     
-        model.summary()
+        self.model = self.build()     
+        self.model.summary()
         
-        if self.class_balancing: # compute_class_weight if class_balancing is True
-            class_weight  = compute_class_weight(y_train)
-            self.loss[-1] = SparseCategoricalCrossentropy(class_weight=class_weight)
+        # if self.class_balancing: # compute_class_weight if class_balancing is True
+        #     class_weight  = compute_class_weight(y_train)
+        #     self.loss[-1] = SparseCategoricalCrossentropy(class_weight=class_weight)
 
         
-        model.compile(optimizer=self.optimizer, loss=self.loss, metrics=self.metrics, loss_weights=self.loss_weights)
+        self.model.compile(optimizer=self.optimizer, loss=self.loss, metrics=self.metrics, loss_weights=self.loss_weights)
 
-        model.fit(x=X_train, y=[X_train,y_train,y_train],
+        print(self.model.metrics_names)
+        self.model.fit(x=X_train, y=[X_train,y_train,y_train],
                           batch_size=self.batch_size, shuffle=self.shuffle,
                           epochs=self.epochs, validation_data=(X_val, [X_val,y_val,y_val]),
                           callbacks=[checkpointer,csv_logger,reduce_lr,es, time_callback])
@@ -159,37 +163,47 @@ class MIN2Net:
 
         
     def predict(self, X_test, y_test):
-
         if X_test.ndim != 4:
             raise Exception('ValueError: `X_test` is incompatible: expected ndim=4, found ndim='+str(X_test.ndim))
 
-        model = self.build()
-        model.summary()
-        model.load_weights(self.weights_dir)
-        model.compile(optimizer=self.optimizer, loss=self.loss, metrics=self.metrics, loss_weights=self.loss_weights)
-
-        start = time.time()
-        y_pred_decoder, y_pred_trip, y_pred_clf = model.predict(X_test)
-        end = time.time()
-        print(model.metrics_names)
-        loss, decoder_loss, trip_loss, classifier_loss, decoder_acc, trip_acc, classifier_acc  = model.evaluate(x=X_test,
-                                                                                                                y=[X_test,y_test,y_test],
-                                                                                                                batch_size=self.batch_size, 
-                                                                                                                verbose=self.verbose)
+        print("Model metrics names:", self.model.metrics_names)
+        results = self.model.evaluate(x=X_test, y=[X_test, y_test, y_test], batch_size=self.batch_size, verbose=self.verbose)
+        
+        # Print the results for debugging
+        print("Evaluation results:", results)
+        
+        # Check if the results length matches the expected length
+        if len(results) != 7:
+            print("Warning: The number of evaluation results does not match the expected number of 7.")
+        
+        # Extract individual results
+        total_loss = results[0]
+        decoder_loss = results[1]
+        trip_loss = results[2]
+        classifier_loss = results[3]
+        
+        y_pred_decoder, y_pred_trip, y_pred_clf = self.model.predict(X_test)
         y_pred_argm = np.argmax(y_pred_clf, axis=1)
-        print("F1-score is computed based on {}".format(self.f1_average))
         f1 = f1_score(y_test, y_pred_argm, average=self.f1_average)
-        print('(loss: {}, accuracy: {})'.format(loss, classifier_acc))
+        
+        print('(loss: {}, accuracy: {})'.format(decoder_loss, total_loss))
         print(classification_report(y_test, y_pred_argm))
-        evaluation = {'loss': loss, 
-                      'decoder_loss': decoder_loss, 
-                      'triplet_loss':trip_loss, 
-                      'classifier_loss': classifier_loss, 
-                      'accuracy': classifier_acc,
-                      'f1-score': f1 ,
-                      'prediction_time': end-start}
-        Y = {'y_true': y_test,
-             'y_pred': y_pred_argm,
-             'y_pred_decoder': y_pred_decoder}
+        
+        evaluation = {
+            'loss': total_loss, 
+            'decoder_loss': decoder_loss, 
+            'triplet_loss': trip_loss, 
+            'classifier_loss': classifier_loss, 
+            # 'decoder_accuracy': decoder_acc,
+            # 'triplet_accuracy': trip_acc,
+            # 'classifier_accuracy': classifier_acc,
+            'f1-score': f1
+        }
+        
+        Y = {
+            'y_true': y_test,
+            'y_pred': y_pred_argm,
+            'y_pred_decoder': y_pred_decoder
+        }
 
         return Y, evaluation
