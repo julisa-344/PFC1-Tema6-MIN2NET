@@ -165,6 +165,7 @@ class DataLoader:
         print(f"Class 2 shape: {class2_data.shape}")
 
         data = np.concatenate((class1_data, class2_data), axis=0)
+        ## class1 (NOP300) = 0.0   y class2 (P300) = 1.0
         labels = np.concatenate((np.zeros(class1_data.shape[0]), np.ones(class2_data.shape[0])), axis=0)
 
         # Split data into train and test 60 porciento de la data total va para el train

@@ -186,11 +186,11 @@ class MIN2Net:
         y_pred_argm = np.argmax(y_pred_clf, axis=1)
         f1 = f1_score(y_test, y_pred_argm, average=self.f1_average)
         
-        print('(loss: {}, accuracy: {})'.format(decoder_loss, total_loss))
+        print('(loss: {}, accuracy: {})'.format(total_loss,decoder_loss ))
         print(classification_report(y_test, y_pred_argm))
         
         evaluation = {
-            'loss': total_loss, 
+            'loss':total_loss, 
             'decoder_loss': decoder_loss, 
             'triplet_loss': trip_loss, 
             'classifier_loss': classifier_loss, 

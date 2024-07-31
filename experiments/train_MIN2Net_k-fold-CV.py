@@ -62,6 +62,7 @@ def k_fold_cross_validation(subject):
         # train and test using MIN2Net
         print(f"Training with shapes: X_train={X_train.shape}, y_train={y_train.shape}, X_val={X_val.shape}, y_val={y_val.shape}")
         model.fit(X_train, y_train, X_val, y_val)
+        print("Data de test")
         Y, evaluation = model.predict(X_test, y_test)
 
         # logging
